@@ -1,6 +1,7 @@
 window.addEventListener("DOMContentLoaded", () => {
   /* ===== STATE ===== */
-  const API_BASE = "https://fsa-crud-2aa9294fe819.herokuapp.com/api";
+  const API_BASE =
+    "https://fsa-crud-2aa9294fe819.herokuapp.com/api/2509-FTB-CT-WEB-PT";
   const state = {
     events: [], // Array of all events from the API
     selectedEvent: null, // Full event object for selected event.
@@ -60,8 +61,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function formatDate(dateString) {
     try {
-      const d = new Date(datestring);
-      return isNaN(d) ? datestring : d.toLocaleString();
+      const d = new Date(dateString);
+      return isNaN(d) ? dateString : d.toLocaleString();
     } catch {
       return dateString;
     }
@@ -73,23 +74,76 @@ window.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch(`${API_BASE}/events`);
       if (!res.ok) throw new Error(`Failed to fetch events (${res.status})`);
-      const events = await res.join();
+      const events = await res.json();
       setState({ events, loading: false });
     } catch (err) {
       setState({ loading: false, error: err.message || String(err) });
     }
   }
 
-  async function fetchEventById(id) {
+  async function fetchEvents() {
     setState({ loading: true, error: null });
+
+    // Fallback sample so UI still works if API shape is wrong
+    const sample = [
+      {
+        _id: "1",
+        name: "Sample Party A",
+        when: new Date().toISOString(),
+        location: "My House",
+        description: "Demo party A",
+      },
+
+      {
+        _id: "2",
+        name: "Sample Party B",
+        when: new Date().toISOString(),
+        location: "Not my house",
+        description: "Demo party B",
+      },
+    ];
     try {
-      const res = await fetch(`${API_BASE}/events/${id}`);
-      if (!res.ok)
-        throw new Error(`Failed to fetch event ${id} (${res.status})`);
-      const event = await res.json();
-      setState({ selectedEvent: event, loading: false });
+      const res = await fetch(`${API_BASE}/events`);
+      const json = await res.json();
+
+      // debug: uncomment to inspect API shape
+      // console.log('fetchEvents json', json);
+
+      // If API returned an array directly
+      if (Array.isArray(json)) {
+        setState({ events: json, loading: false });
+        return;
+      }
+
+      // If API returned { data: [...] } or similar
+      if (json && Array.isArray(json.data)) {
+        setState({ events: json.data, loading: false });
+        return;
+      }
+
+      // If res.ok but we don't have an array, use sample and show warning
+      if (res.ok) {
+        setState({
+          events: sample,
+          loading: false,
+          error: "API returned unexpected shape - using sample data",
+        });
+        return;
+      }
+
+      // If not ok (404/500) use sample and show error
+      setState({
+        events: sample,
+        loading: false,
+        error: `API returned ${res.status} - using sample data`,
+      });
     } catch (err) {
-      setState({ loading: false, error: err.message || String(err) });
+      // Network fallback
+      setState({
+        events: sample,
+        loading: false,
+        error: err.message || String(err),
+      });
     }
   }
 
@@ -104,14 +158,14 @@ window.addEventListener("DOMContentLoaded", () => {
     const items = events
       .map((ev) => {
         const isSelected = String(ev._id) === String(selectedId);
-        const cls = isSelected ? `party-item selected` : `party-item`;
+        const cls = isSelected ? "party-item selected" : "party-item";
         // Attatch data-id attributes so that we can add event listeners after innerHTML.
-        return `<div class ="${cls}" data-id= ${ev._id}">${escapeHTML(
+        return `<div class ="${cls}" data-id="${ev._id}">${escapeHtml(
           ev.name
         )}</div`;
       })
       .join("");
-    return `<div class = "party-list-items">${items}</div>`;
+    return `<div class="party-list-items">${items}</div>`;
   }
 
   // Render details for selected party
@@ -121,13 +175,13 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     return `
     <div class = "party-detail-card">
-    <h3>${escapeHTML(event.name)}</h3>
-    <p><strong>ID:</strong> ${escapeHTML(event._id)}h3>
+    <h3>${escapeHtml(event.name)}</h3>
+    <p><strong>ID:</strong> ${escapeHtml(event._id)}</p>
     <p><strong>DATE:</strong> ${formatDate(event.when)}</p>
-    <p><strong>Location:</strong> ${escapeHTML(event.location)}</p>
+    <p><strong>Location:</strong> ${escapeHtml(event.location)}</p>
     <p><strong>Description:</strong></p>
-    <p>${escapeHTML(event.description || "")}</p>
-    </dive>
+    <p>${escapeHtml(event.description || "")}</p>
+    </div>
     `;
   }
 
