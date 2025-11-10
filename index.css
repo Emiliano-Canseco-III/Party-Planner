@@ -1,0 +1,38 @@
+body {
+  font-family: Arial, sans-serif;
+  max-width: 1100px;
+  margin: 16px auto;
+  padding: 8px;
+  color: #222;
+}
+
+header h1 {
+  text-align: center;
+  margin: 8px 0 16px;
+}
+
+main {
+  display: flex;
+  gap: 16px;
+}
+
+#party-list-column,
+#party-detail-column {
+  flex: 1;
+  border: 1px solid #ccc;
+  padding: 8px;
+  min-height: 200px;
+}
+
+.party-item {
+  padding: 6px;
+  border-bottom: 1px dashed #ddd;
+}
+.party-item.selected {
+  background: #eef;
+}
+
+#message {
+  color: #a00;
+  margin-top: 10px;
+}
